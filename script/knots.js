@@ -10,6 +10,19 @@ function shuffle(arr) {
     });
 }
 
+function dist(a, b) {
+    return Math.abs(a.x-b.x) + Math.abs(a.y-b.y);
+}
+
+function contains(lst, node) {
+    for (let i=0; i<lst.length; i++) {
+        if (dist(lst[i], node) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Each crossing like AABCab clockwise
 // For trefoil, other crossing would be DCBDba
 // Any rotations or reflections are allowed but must update above/below
@@ -39,7 +52,7 @@ class Canvas {
     buildPaths() {
         this.paths = [];
         // Get letters
-        ['A'].forEach(letter => {
+        ['A','B','C','D'].forEach(letter => {
             const path = [];
             this.nodes.forEach(node => {
                 for (let i=0; i<4; i++) {
@@ -74,10 +87,48 @@ class Canvas {
         }
     }
 
+    // A* search
     connect(path) {
-        const claimed = this.paths.reduce((acc, p) => {
-            acc = acc.concat(p);
-        }, []);
+        const walls = this.paths.reduce((acc, p) => acc.concat(p), []);
+        const from = path[1];
+        const to = path[path.length-2];
+        const frontq = [from];
+        const visited = [];
+        const result = [];
+        // Failsafe for infinite loop
+        for (let i=0; i<100; i++) {
+            frontq.sort((a,b) => dist(b, to) - dist(a, to));
+            let node = frontq.pop();
+            if (!node) {
+                break;
+            }
+            if (dist(node, to) == 1) {
+                while (dist(node, from) > 0) {
+                    result.push(node);
+                    node = node.prev;
+                }
+                result.push(path[1]);
+                result.push(path[0]);
+                result.reverse();
+                result.push(path[path.length-2]);
+                result.push(path[path.length-1]);
+                path.splice(0, path.length, ...result);
+                return true;
+            }
+            [[-1,0],[1,0],[0,-1],[0,1]].forEach(([dx, dy]) => {
+                const next = {x: node.x+dx, y: node.y+dy, prev: node};
+                if (next.x < 0 || next.x >= this.n || next.y < 0 || next.y >= this.n) {
+                    return;
+                }
+                if (!contains(walls, next) && !contains(visited, next)) {
+                    visited.push(next);
+                    frontq.push(next);
+                }
+            });
+        }
+        // Don't draw failed paths
+        path.splice(0, path.length, path[0], path[path.length-1]);
+        return false;
     }
 
     buildNodes(knot) {
@@ -89,8 +140,8 @@ class Canvas {
                 const x = Math.floor(Math.random()*(this.n-2))+1;
                 const y = Math.floor(Math.random()*(this.n-2))+1;
                 for (let i=0; i<this.nodes.length; i++) {
-                    if (Math.abs(this.nodes[i].x-x) <= 1 
-                        && Math.abs(this.nodes[i].y-y) <= 1) {
+                    if (Math.abs(this.nodes[i].x-x) <= 2 
+                        && Math.abs(this.nodes[i].y-y) <= 2) {
                         done = false;
                         break;
                     }
@@ -127,6 +178,30 @@ class Canvas {
         }
     }
 
+    drawCornerLU(x, y) {
+        this.ctx.fillStyle = 'black';
+        this.ctx.fillRect(x*this.dx, (y+0.3)*this.dy, 0.7*this.dx, 0.4*this.dy);
+        this.ctx.fillRect((x+0.3)*this.dx, y*this.dy, 0.4*this.dx, 0.7*this.dy);
+    }
+    
+    drawCornerRU(x, y) {
+        this.ctx.fillStyle = 'black';
+        this.ctx.fillRect((x+0.3)*this.dx, (y+0.3)*this.dy, 0.7*this.dx, 0.4*this.dy);
+        this.ctx.fillRect((x+0.3)*this.dx, y*this.dy, 0.4*this.dx, 0.7*this.dy);
+    }
+
+    drawCornerLD(x, y) {
+        this.ctx.fillStyle = 'black';
+        this.ctx.fillRect(x*this.dx, (y+0.3)*this.dy, 0.7*this.dx, 0.4*this.dy);
+        this.ctx.fillRect((x+0.3)*this.dx, (y+0.3)*this.dy, 0.4*this.dx, 0.7*this.dy);
+    }
+
+    drawCornerRD(x, y) {
+        this.ctx.fillStyle = 'black';
+        this.ctx.fillRect((x+0.3)*this.dx, (y+0.3)*this.dy, 0.7*this.dx, 0.4*this.dy);
+        this.ctx.fillRect((x+0.3)*this.dx, (y+0.3)*this.dy, 0.4*this.dx, 0.7*this.dy);
+    }
+
     drawGrid() {
         this.ctx.save();
         this.ctx.strokeStyle = 'black';
@@ -151,10 +226,31 @@ class Canvas {
     }
 
     drawPaths() {
+        console.log(this.paths);
         this.paths.forEach(path => {
             for (let i=1; i<path.length-1; i++) {
+                const [px, py] = [path[i-1].x, path[i-1].y];
                 const [x, y] = [path[i].x, path[i].y];
-                this.ctx.fillRect(x*this.dx+5, y*this.dy+5, 5, 5);
+                const [nx, ny] = [path[i+1].x, path[i+1].y];
+                //this.ctx.fillRect(x*this.dx+5, y*this.dy+5, 5, 5);
+                if (Math.abs(nx-px) == 2 && Math.abs(ny-py) == 0) {
+                    this.drawLR(x, y);
+                }
+                if (Math.abs(nx-px) == 0 && Math.abs(ny-py) == 2) {
+                    this.drawUD(x, y);
+                }
+                if ((((x-px) == 1) || ((x-nx) == 1)) && (((y-py) == 1) || ((y-ny) == 1))) {
+                    this.drawCornerLU(x, y);
+                }
+                if ((((x-px) == -1) || ((x-nx) == -1)) && (((y-py) == 1) || ((y-ny) == 1))) {
+                    this.drawCornerRU(x, y);
+                }
+                if ((((x-px) == -1) || ((x-nx) == -1)) && (((y-py) == -1) || ((y-ny) == -1))) {
+                    this.drawCornerRD(x, y);
+                }
+                if ((((x-px) == 1) || ((x-nx) == 1)) && (((y-py) == -1) || ((y-ny) == -1))) {
+                    this.drawCornerLD(x, y);
+                }
             }
         });
     }
