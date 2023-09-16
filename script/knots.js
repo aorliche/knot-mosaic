@@ -23,11 +23,13 @@ function contains(lst, node) {
     return false;
 }
 
-// Each crossing like AABCab clockwise
-// For trefoil, other crossing would be DCBDba
+// Each crossing like CABDba
+// Capital letters refer to string sections, from left clockwise
+// Lowercase letters refer to left crossing above or below
 // Any rotations or reflections are allowed but must update above/below
 const knots = [
-    {name: 'Trefoil', crossings: ['AABCab', 'DCBDba']},
+    {name: 'Trefoil', crossings: ['CABDba', 'BAFEab', 'DEFCba']},
+    {name: 'Hopf', crossings: ['ABCDba', 'DCBAba']},
 ];
 
 class Canvas {
@@ -45,13 +47,19 @@ class Canvas {
             return;
         }
         this.knot = knot;
-        this.buildNodes();
-        this.buildPaths();
+        // Infinite loop failsafe
+        for (let i=0; i<50; i++) {
+            this.buildNodes();
+            const succ = this.buildPaths();
+            if (succ) {
+                break;
+            }
+        }
     }
 
     buildPaths() {
         this.paths = [];
-        // Get letters
+        // TODO Get letters
         ['A','B','C','D'].forEach(letter => {
             const path = [];
             this.nodes.forEach(node => {
@@ -85,6 +93,8 @@ class Canvas {
                 return false;
             }
         }
+        console.log('got here');
+        return true;
     }
 
     // A* search
@@ -152,6 +162,7 @@ class Canvas {
                 }
             }
         });
+        //this.nodes = [{x: 2, y: 2, crossing: this.knot.crossings[0]}, {x: 5, y: 2, crossing: this.knot.crossings[1]}, {x: 4, y:5, crossing: this.knot.crossings[2]}];
     }
 
     drawLR(x, y, below) {
@@ -264,7 +275,7 @@ class Canvas {
 }
 
 window.addEventListener('load', () => {
-    const canvas = new Canvas($('#canvas'), 8);
-    canvas.buildKnot(knots[0]);
+    const canvas = new Canvas($('#canvas'), 12);
+    canvas.buildKnot(knots[1]);
     canvas.repaint();
 });
