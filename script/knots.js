@@ -1,0 +1,174 @@
+
+const $ = q => document.querySelector(q);
+const $$ = q => [...document.querySelectorAll(q)];
+
+// I think I read somewhere this algorithm is biased
+function shuffle(arr) {
+    arr.forEach((item, i) => {
+        const j = Math.floor(Math.random()*arr.length);
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    });
+}
+
+// Each crossing like AABCab clockwise
+// For trefoil, other crossing would be DCBDba
+// Any rotations or reflections are allowed but must update above/below
+const knots = [
+    {name: 'Trefoil', crossings: ['AABCab', 'DCBDba']},
+];
+
+class Canvas {
+    constructor(canvas, n) {
+        this.canvas = canvas;
+        this.ctx = this.canvas.getContext('2d');
+        this.dx = this.canvas.width / n;
+        this.dy = this.canvas.height / n;
+        this.n = n;
+    }
+
+    buildKnot(knot) {
+        if (!knot || !knot.name || !knot.crossings || !knot.crossings.length) {
+            console.log('Bad knot');
+            return;
+        }
+        this.knot = knot;
+        this.buildNodes();
+        this.buildPaths();
+    }
+
+    buildPaths() {
+        this.paths = [];
+        // Get letters
+        ['A'].forEach(letter => {
+            const path = [];
+            this.nodes.forEach(node => {
+                for (let i=0; i<4; i++) {
+                    const ltr = node.crossing[i];
+                    if (ltr == letter) {
+                        const m = {x: node.x, y: node.y};
+                        let n;
+                        switch (i) {
+                            case 0: n = {x: m.x-1, y: m.y}; break;
+                            case 1: n = {x: m.x, y: m.y-1}; break;
+                            case 2: n = {x: m.x+1, y: m.y}; break;
+                            case 3: n = {x: m.x, y: m.y+1}; break;
+                        }
+                        if (path.length == 0) {
+                            path.push(m);
+                            path.push(n);
+                        } else {
+                            path.push(n);
+                            path.push(m);
+                        }
+                    }
+                }
+            });
+            this.paths.push(path);
+        });
+        shuffle(this.paths);
+        for (let i=0; i<this.paths.length; i++) {
+            const succ = this.connect(this.paths[i]);
+            if (!succ) {
+                return false;
+            }
+        }
+    }
+
+    connect(path) {
+        const claimed = this.paths.reduce((acc, p) => {
+            acc = acc.concat(p);
+        }, []);
+    }
+
+    buildNodes(knot) {
+        this.nodes = [];
+        this.knot.crossings.forEach(crossing => {
+            // Failsafe for infinite loop
+            for (let a=0; a<10; a++) {
+                let done = true;
+                const x = Math.floor(Math.random()*(this.n-2))+1;
+                const y = Math.floor(Math.random()*(this.n-2))+1;
+                for (let i=0; i<this.nodes.length; i++) {
+                    if (Math.abs(this.nodes[i].x-x) <= 1 
+                        && Math.abs(this.nodes[i].y-y) <= 1) {
+                        done = false;
+                        break;
+                    }
+                }
+                if (done) {
+                    this.nodes.push({x, y, crossing});
+                    break;
+                }
+            }
+        });
+    }
+
+    drawLR(x, y, below) {
+        this.ctx.fillStyle = 'black';
+        const [sx, sy] = [x*this.dx, (y+0.3)*this.dy];
+        const [dx, dy] = [this.dx, 0.4*this.dy];
+        if (below) {
+            this.ctx.fillRect(sx, sy, 0.25*dx, dy);
+            this.ctx.fillRect(sx+0.75*dx, sy, 0.25*dx, dy);
+        } else {
+            this.ctx.fillRect(sx, sy, dx, dy);
+        }
+    }
+
+    drawUD(x, y, below) {
+        this.ctx.fillStyle = 'black';
+        const [sx, sy] = [(x+0.3)*this.dx, y*this.dy];
+        const [dx, dy] = [0.4*this.dx, this.dy];
+        if (below) {
+            this.ctx.fillRect(sx, sy, dx, 0.25*dy);
+            this.ctx.fillRect(sx, sy+0.75*dy, dx, 0.25*dy);
+        } else {
+            this.ctx.fillRect(sx, sy, dx, dy);
+        }
+    }
+
+    drawGrid() {
+        this.ctx.save();
+        this.ctx.strokeStyle = 'black';
+        for (let i=0; i<=this.n; i++) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, i * this.dy);
+            this.ctx.lineTo(canvas.width, i * this.dy);
+            this.ctx.stroke();
+            this.ctx.beginPath();
+            this.ctx.moveTo(i * this.dx, 0);
+            this.ctx.lineTo(i * this.dx, canvas.height);
+            this.ctx.stroke();
+        }
+        this.ctx.restore();
+    }
+
+    drawNodes() {
+        this.nodes.forEach(node => {
+            this.drawLR(node.x, node.y, node.crossing[4] == 'b');
+            this.drawUD(node.x, node.y, node.crossing[5] == 'b');
+        });
+    }
+
+    drawPaths() {
+        this.paths.forEach(path => {
+            for (let i=1; i<path.length-1; i++) {
+                const [x, y] = [path[i].x, path[i].y];
+                this.ctx.fillRect(x*this.dx+5, y*this.dy+5, 5, 5);
+            }
+        });
+    }
+
+    repaint() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.drawGrid();
+        this.drawNodes();
+        this.drawPaths();
+    }
+}
+
+window.addEventListener('load', () => {
+    const canvas = new Canvas($('#canvas'), 8);
+    canvas.buildKnot(knots[0]);
+    canvas.repaint();
+});
