@@ -28,17 +28,26 @@ function contains(lst, node) {
 // Lowercase letters refer to left crossing above or below
 // Any rotations or reflections are allowed but must update above/below
 const knots = [
-    {name: 'Trefoil', crossings: ['CABDba', 'BAFEab', 'DEFCba']},
-    {name: 'Hopf', crossings: ['ABCDba', 'DCBAba']},
+    {name: 'Trefoil', crossings: ['CABDba', 'BAFEab', 'DEFCba'], n: 10},
+    {name: 'Hopf', crossings: ['ABCDba', 'DCBAba'], n: 10},
+    {name: 'Double Trefoils', crossings: ['CABDba', 'BAFEab', 'DEFCba', 'IGHJba', 'HGLKab', 'JKLIba'], n: 16, hint: [[4,5],[6,9],[2,9],[12,5],[14,9],[10,9]]}
 ];
 
 class Canvas {
     constructor(canvas, n) {
         this.canvas = canvas;
         this.ctx = this.canvas.getContext('2d');
-        this.dx = this.canvas.width / n;
-        this.dy = this.canvas.height / n;
         this.n = n;
+    }
+
+    set n(val) {
+        this.n_ = val;
+        this.dx = this.canvas.width / this.n;
+        this.dy = this.canvas.height / this.n;
+    }
+
+    get n() {
+        return this.n_;
     }
 
     buildKnot(knot) {
@@ -47,9 +56,11 @@ class Canvas {
             return;
         }
         this.knot = knot;
+        this.n = knot.n;
         // Infinite loop failsafe
-        for (let i=0; i<50; i++) {
-            this.buildNodes();
+        for (let i=0; i<1000; i++) {
+            const useHint = i > 500;
+            this.buildNodes(useHint);
             const succ = this.buildPaths();
             if (succ) {
                 break;
@@ -59,8 +70,16 @@ class Canvas {
 
     buildPaths() {
         this.paths = [];
-        // TODO Get letters
-        ['A','B','C','D'].forEach(letter => {
+        const letters = [];
+        this.nodes.forEach(node => {
+            const c = node.crossing;
+            for (let i=0; i<4; i++) {
+                if (letters.indexOf(c[i]) == -1) {
+                    letters.push(c[i]);
+                }
+            }
+        });
+        letters.forEach(letter => {
             const path = [];
             this.nodes.forEach(node => {
                 for (let i=0; i<4; i++) {
@@ -93,7 +112,6 @@ class Canvas {
                 return false;
             }
         }
-        console.log('got here');
         return true;
     }
 
@@ -141,8 +159,17 @@ class Canvas {
         return false;
     }
 
-    buildNodes(knot) {
+    buildNodes(useHint) {
         this.nodes = [];
+        if (useHint && this.knot.hint) {
+            this.n = this.knot.n;
+            for (let i=0; i<this.knot.crossings.length; i++) {
+                const c = this.knot.crossings[i];
+                const [x,y] = this.knot.hint[i];
+                this.nodes.push({x, y, crossing: c});
+            }
+            return;
+        }
         this.knot.crossings.forEach(crossing => {
             // Failsafe for infinite loop
             for (let a=0; a<10; a++) {
@@ -162,7 +189,6 @@ class Canvas {
                 }
             }
         });
-        //this.nodes = [{x: 2, y: 2, crossing: this.knot.crossings[0]}, {x: 5, y: 2, crossing: this.knot.crossings[1]}, {x: 4, y:5, crossing: this.knot.crossings[2]}];
     }
 
     drawLR(x, y, below) {
@@ -237,7 +263,6 @@ class Canvas {
     }
 
     drawPaths() {
-        console.log(this.paths);
         this.paths.forEach(path => {
             for (let i=1; i<path.length-1; i++) {
                 const [px, py] = [path[i-1].x, path[i-1].y];
@@ -275,7 +300,17 @@ class Canvas {
 }
 
 window.addEventListener('load', () => {
-    const canvas = new Canvas($('#canvas'), 12);
-    canvas.buildKnot(knots[1]);
+    const select = $('#knots');
+    knots.forEach((knot,i) => {
+        const opt = document.createElement('option');
+        opt.innerHTML = knot.name;
+        select.appendChild(opt);
+    });
+    const canvas = new Canvas($('#canvas'));
+    canvas.buildKnot(knots[0]);
     canvas.repaint();
+    select.addEventListener('change', () => {
+        canvas.buildKnot(knots[select.selectedIndex]);
+        canvas.repaint();
+    });
 });
