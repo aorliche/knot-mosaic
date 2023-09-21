@@ -28,9 +28,46 @@ function contains(lst, node) {
 // Lowercase letters refer to left crossing above or below
 // Any rotations or reflections are allowed but must update above/below
 const knots = [
-    {name: 'Trefoil', crossings: ['CABDba', 'BAFEab', 'DEFCba'], n: 10},
-    {name: 'Hopf', crossings: ['ABCDba', 'DCBAba'], n: 10},
-    {name: 'Double Trefoils', crossings: ['CABDba', 'BAFEab', 'DEFCba', 'IGHJba', 'HGLKab', 'JKLIba'], n: 16, hint: [[4,5],[6,9],[2,9],[12,5],[14,9],[10,9]]}
+    {
+        name: 'Trefoil 3_1', 
+        crossings: ['CABDba', 'BAFEab', 'DEFCba'], 
+        n: 10, 
+        img: 'http://katlas.org/w/images/c/cb/3_1.gif'
+    },
+    {
+        name: 'Hopf L2a1', 
+        crossings: ['ABCDba', 'DCBAba'], 
+        n: 10, 
+        img: 'http://katlas.org/w/images/2/2f/L2a1.gif'
+    },
+    {
+        name: 'Double Trefoils', 
+        crossings: ['CABDba', 'BAFEab', 'DEFCba', 'IGHJba', 'HGLKab', 'JKLIba'], 
+        n: 16, 
+        hint: [[4,5],[6,9],[2,9],[12,5],[14,9],[10,9]], 
+        img: 'http://katlas.org/w/images/c/cb/3_1.gif'
+    },
+    {
+        name: 'Figure Eight 4_1', 
+        crossings: ['ABCDab', 'EBFGba', 'HGFAab', 'DCEHab'], 
+        n: 12, 
+        hint: [[2,6],[8,4],[8,8],[5,6]], 
+        img: 'http://katlas.org/w/images/6/6a/4_1.gif'
+    },
+    {
+        name: 'Cinquefoil 5_1', 
+        crossings: ['ABCDba', 'CBEFab', 'GFEHba', 'IGHJba', 'ADIJab'], 
+        n: 14, 
+        hint: [[4,3],[10,3],[11,7],[7,12],[3,7]], 
+        img: 'http://katlas.org/w/images/2/27/5_1.gif'
+    },
+    {
+        name: '3-twist Knot 5_2', 
+        crossings: ['ABCDab', 'EBFGba', 'GFIHba', 'JHIAab', 'DCEJab'],
+        n: 14,
+        hint: [[3,7],[10,3],[11,7],[10,11],[6,7]],
+        img: 'http://katlas.org/w/images/d/dd/5_2.gif'
+    }
 ];
 
 class Canvas {
@@ -55,13 +92,15 @@ class Canvas {
             console.log('Bad knot');
             return;
         }
+        $('#knots-img').src = knot.img;
         this.knot = knot;
         this.n = knot.n;
         // Infinite loop failsafe
-        for (let i=0; i<1000; i++) {
-            const useHint = i > 500;
+        for (let i=0; i<400; i++) {
+            const useHint = i > 200;
             this.buildNodes(useHint);
             const succ = this.buildPaths();
+            console.log(succ);
             if (succ) {
                 break;
             }
@@ -313,4 +352,9 @@ window.addEventListener('load', () => {
         canvas.buildKnot(knots[select.selectedIndex]);
         canvas.repaint();
     });
+    $('#retry').addEventListener('click', e => {
+        e.preventDefault();
+        canvas.buildKnot(knots[select.selectedIndex]);
+        canvas.repaint();
+    })
 });
