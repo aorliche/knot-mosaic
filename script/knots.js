@@ -32,41 +32,41 @@ const knots = [
         name: 'Trefoil 3_1', 
         crossings: ['CABDba', 'BAFEab', 'DEFCba'], 
         n: 10, 
-        img: 'http://katlas.org/w/images/c/cb/3_1.gif'
+        img: './image/3_1.gif'
     },
     {
         name: 'Hopf L2a1', 
         crossings: ['ABCDba', 'DCBAba'], 
         n: 10, 
-        img: 'http://katlas.org/w/images/2/2f/L2a1.gif'
+        img: './image/L2a1.gif'
     },
     {
         name: 'Double Trefoils', 
         crossings: ['CABDba', 'BAFEab', 'DEFCba', 'IGHJba', 'HGLKab', 'JKLIba'], 
         n: 16, 
         hint: [[4,5],[6,9],[2,9],[12,5],[14,9],[10,9]], 
-        img: 'http://katlas.org/w/images/c/cb/3_1.gif'
+        img: './image/3_1.gif'
     },
     {
         name: 'Figure Eight 4_1', 
         crossings: ['ABCDab', 'EBFGba', 'HGFAab', 'DCEHab'], 
         n: 12, 
         hint: [[2,6],[8,4],[8,8],[5,6]], 
-        img: 'http://katlas.org/w/images/6/6a/4_1.gif'
+        img: './image/4_1.gif'
     },
     {
         name: 'Cinquefoil 5_1', 
         crossings: ['ABCDba', 'CBEFab', 'GFEHba', 'IGHJba', 'ADIJab'], 
         n: 14, 
         hint: [[4,3],[10,3],[11,7],[7,12],[3,7]], 
-        img: 'http://katlas.org/w/images/2/27/5_1.gif'
+        img: './image/5_1.gif'
     },
     {
         name: '3-twist Knot 5_2', 
         crossings: ['ABCDab', 'EBFGba', 'GFIHba', 'JHIAab', 'DCEJab'],
         n: 14,
         hint: [[3,7],[10,3],[11,7],[10,11],[6,7]],
-        img: 'http://katlas.org/w/images/d/dd/5_2.gif'
+        img: './image/5_2.gif'
     }
 ];
 
